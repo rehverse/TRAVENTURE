@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '../../components/AuthContext';
 import PageShell from '../../components/PageShell';
 import BorderGlow from '../../components/BorderGlow';
 
@@ -149,6 +150,7 @@ export default function HotelDetailsPage({ params }) {
   const router = useRouter();
   const pathname = usePathname();
   const routeParams = useParams();
+  const { isLoggedIn } = useAuth();
   const today = formatDate(new Date());
   const tomorrow = addDays(today, 1);
 
@@ -186,8 +188,15 @@ export default function HotelDetailsPage({ params }) {
   }, [rooms]);
 
   const handleReserve = () => {
-    const next = encodeURIComponent(pathname);
-    router.push(`/login?reason=booking&next=${next}`);
+    if (isLoggedIn) {
+      // Navigate to booking flow with hotel pre-selected
+      const hotelParam = encodeURIComponent(slug);
+      const roomParam = encodeURIComponent(activeRoom?.name || '');
+      router.push(`/book?service=hotel&hotel=${hotelParam}&room=${roomParam}&checkIn=${checkIn}&checkOut=${checkOut}`);
+    } else {
+      const next = encodeURIComponent(pathname);
+      router.push(`/login?reason=booking&next=${next}`);
+    }
   };
 
   return (
@@ -309,7 +318,7 @@ export default function HotelDetailsPage({ params }) {
               onClick={handleReserve}
               className="mt-6 w-full rounded-full bg-[#2ea2d8] px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110"
             >
-              Sign in to reserve
+              {isLoggedIn ? 'Reserve Now' : 'Sign in to reserve'}
             </button>
           </div>
         </BorderGlow>

@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 
 const STORAGE_KEY_USER = 'traventure_user';
 const STORAGE_KEY_BOOKINGS = 'traventure_bookings';
+const STORAGE_KEY_GUIDE_BOOKINGS = 'traventure_guide_bookings';
 
 function generateId() {
   return 'TV-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -113,13 +114,50 @@ export function AuthProvider({ children }) {
       review: null,
     };
     setBookings(prev => [newBooking, ...prev]);
+
+    // If booking includes a guide, save to shared guide bookings store
+    if (booking.guide) {
+      const guideRequest = {
+        id: newBooking.id,
+        guideName: booking.guide.name,
+        guideId: booking.guide.id || booking.guide.name.toLowerCase().replace(/[^a-z]/g, '-'),
+        guideCity: booking.guide.city,
+        guideFocus: booking.guide.focus,
+        travelerName: booking.traveler?.name || user?.name || 'Traveler',
+        travelerEmail: booking.traveler?.email || user?.email || '',
+        payout: booking.guide.subtotal || booking.guide.price || 0,
+        status: 'Pending',
+        createdAt: newBooking.createdAt,
+        bookingId: newBooking.id,
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem(STORAGE_KEY_GUIDE_BOOKINGS) || '[]');
+        localStorage.setItem(STORAGE_KEY_GUIDE_BOOKINGS, JSON.stringify([guideRequest, ...existing]));
+      } catch { /* ignore */ }
+    }
+
     return newBooking;
-  }, []);
+  }, [user]);
 
   const cancelBooking = useCallback((bookingId) => {
     setBookings(prev =>
       prev.map(b => (b.id === bookingId ? { ...b, status: 'Cancelled' } : b))
     );
+  }, []);
+
+  // Shared guide bookings helpers (read from localStorage directly since guide may be different user)
+  const getGuideBookings = useCallback(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_GUIDE_BOOKINGS) || '[]');
+    } catch { return []; }
+  }, []);
+
+  const updateGuideBooking = useCallback((bookingId, updates) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY_GUIDE_BOOKINGS) || '[]');
+      const updated = existing.map(b => b.id === bookingId ? { ...b, ...updates } : b);
+      localStorage.setItem(STORAGE_KEY_GUIDE_BOOKINGS, JSON.stringify(updated));
+    } catch { /* ignore */ }
   }, []);
 
   const addReview = useCallback((bookingId, review) => {
@@ -139,6 +177,8 @@ export function AuthProvider({ children }) {
     addBooking,
     cancelBooking,
     addReview,
+    getGuideBookings,
+    updateGuideBooking,
     isLoggedIn: !!user,
   };
 

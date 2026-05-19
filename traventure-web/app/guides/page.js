@@ -1,21 +1,24 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../components/AuthContext';
 import BorderGlow from '../components/BorderGlow';
 import PageShell from '../components/PageShell';
 
 const guides = [
-  { name: 'Leila B.', city: 'Marrakesh', focus: 'Hidden riads & tea houses', rating: 4.95 },
-  { name: 'Jonas K.', city: 'Reykjavik', focus: 'Fjord trails & winter lights', rating: 4.9 },
-  { name: 'Rina S.', city: 'Kyoto', focus: 'Temple mornings & artisan lanes', rating: 4.92 },
-  { name: 'Mateo R.', city: 'Lisbon', focus: 'Food markets & surf culture', rating: 4.88 },
-  { name: 'Aya M.', city: 'Cairo', focus: 'Museum nights & river walks', rating: 4.86 },
-  { name: 'Kai L.', city: 'Auckland', focus: 'Harbor hikes & cafe routes', rating: 4.84 },
+  { id: 'leila-b', name: 'Leila B.', city: 'Marrakesh', focus: 'Hidden riads & tea houses', rating: 4.95 },
+  { id: 'jonas-k', name: 'Jonas K.', city: 'Reykjavik', focus: 'Fjord trails & winter lights', rating: 4.9 },
+  { id: 'rina-s', name: 'Rina S.', city: 'Kyoto', focus: 'Temple mornings & artisan lanes', rating: 4.92 },
+  { id: 'mateo-r', name: 'Mateo R.', city: 'Lisbon', focus: 'Food markets & surf culture', rating: 4.88 },
+  { id: 'aya-m', name: 'Aya M.', city: 'Cairo', focus: 'Museum nights & river walks', rating: 4.86 },
+  { id: 'kai-l', name: 'Kai L.', city: 'Auckland', focus: 'Harbor hikes & cafe routes', rating: 4.84 },
 ];
 
 export default function GuidesPage() {
   const [city, setCity] = useState('All locations');
+  const router = useRouter();
+  const { isLoggedIn } = useAuth();
 
   const cities = useMemo(() => {
     const unique = new Set(guides.map(guide => guide.city));
@@ -26,6 +29,15 @@ export default function GuidesPage() {
     if (city === 'All locations') return guides;
     return guides.filter(guide => guide.city === city);
   }, [city]);
+
+  const handleBook = (guide) => {
+    if (isLoggedIn) {
+      const guideParam = encodeURIComponent(guide.id);
+      router.push(`/book?service=guide&guide=${guideParam}`);
+    } else {
+      router.push('/login?reason=booking&next=/guides');
+    }
+  };
 
   return (
     <PageShell
@@ -66,12 +78,12 @@ export default function GuidesPage() {
               <p className="text-sm text-slate-400">{guide.focus}</p>
               <div className="mt-4 flex items-center justify-between">
                 <p className="text-xs font-semibold text-emerald-300">{guide.rating} star</p>
-                <Link
-                  href="/login?reason=booking&next=/guides"
+                <button
+                  onClick={() => handleBook(guide)}
                   className="rounded-full bg-[#2ea2d8] px-4 py-2 text-xs font-semibold text-white transition hover:brightness-110"
                 >
-                  Book guide
-                </Link>
+                  {isLoggedIn ? 'Book Now' : 'Book guide'}
+                </button>
               </div>
             </div>
           </BorderGlow>

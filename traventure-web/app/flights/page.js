@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '../components/AuthContext';
 import BorderGlow from '../components/BorderGlow';
 import PageShell from '../components/PageShell';
 
@@ -91,6 +92,7 @@ function getTripMultiplier(tripType) {
 export default function FlightsPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isLoggedIn } = useAuth();
   const today = formatDate(new Date());
   const tomorrow = addDays(today, 1);
 
@@ -132,9 +134,20 @@ export default function FlightsPage() {
     setSubmitted(true);
   };
 
-  const handleBook = () => {
-    const next = encodeURIComponent(pathname);
-    router.push(`/login?reason=booking&next=${next}`);
+  const handleBook = (flight) => {
+    if (isLoggedIn) {
+      // Navigate to booking flow with flight pre-selected
+      const flightParam = encodeURIComponent(flight.id);
+      const pax = search.passengers;
+      const cabin = encodeURIComponent(search.class);
+      const tripType = encodeURIComponent(search.type);
+      const depart = search.departDate;
+      const ret = search.returnDate;
+      router.push(`/book?service=flight&flight=${flightParam}&passengers=${pax}&cabin=${cabin}&tripType=${tripType}&departDate=${depart}&returnDate=${ret}`);
+    } else {
+      const next = encodeURIComponent(pathname);
+      router.push(`/login?reason=booking&next=${next}`);
+    }
   };
 
   const minReturnDate = useMemo(() => addDays(search.departDate, 1), [search.departDate]);
@@ -322,10 +335,10 @@ export default function FlightsPage() {
                   <p className="text-2xl font-bold text-slate-100">${totalPrice}</p>
                   <p className="text-xs text-slate-400">{search.class} · {search.passengers} {Number(search.passengers) === 1 ? 'passenger' : 'passengers'}</p>
                   <button
-                    onClick={handleBook}
+                    onClick={() => handleBook(flight)}
                     className="rounded-full bg-[#2ea2d8] px-6 py-2 text-sm font-semibold text-white transition hover:brightness-110 w-full sm:w-auto"
                   >
-                    Select
+                    {isLoggedIn ? 'Book Now' : 'Select'}
                   </button>
                 </div>
               </div>

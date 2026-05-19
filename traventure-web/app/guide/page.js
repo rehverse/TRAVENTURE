@@ -1,14 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../components/AuthContext';
 import DashboardShell from '../components/DashboardShell';
 import BorderGlow from '../components/BorderGlow';
-
-const overviewStats = [
-  { label: 'Total Tours', value: '64', detail: 'All time' },
-  { label: 'Upcoming Tours', value: '5', detail: 'Next 14 days' },
-  { label: 'Pending Requests', value: '3', detail: 'Needs reply' },
-];
 
 const quickActions = [
   {
@@ -45,7 +41,8 @@ const quickActions = [
   },
 ];
 
-const upcomingTours = [
+// Static fallback tours (shown alongside real bookings)
+const staticTours = [
   { id: 'TOUR-1048', traveler: 'Marina K.', city: 'Lisbon', date: 'Jun 02, 2026', time: '09:30', groupSize: 2, status: 'Confirmed' },
   { id: 'TOUR-1052', traveler: 'Owen P.', city: 'Kyoto', date: 'Jun 05, 2026', time: '14:00', groupSize: 4, status: 'Confirmed' },
   { id: 'TOUR-1056', traveler: 'Ava L.', city: 'Marrakesh', date: 'Jun 08, 2026', time: '10:15', groupSize: 3, status: 'Confirmed' },
@@ -54,10 +51,48 @@ const upcomingTours = [
 function getStatusColor(status) {
   if (status === 'Confirmed') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
   if (status === 'Pending') return 'bg-[#2ea2d8]/20 text-[#2ea2d8] border-[#2ea2d8]/30';
+  if (status === 'Cancelled' || status === 'Declined') return 'bg-red-500/20 text-red-400 border-red-500/30';
   return 'bg-white/10 text-slate-300 border-white/10';
 }
 
+function formatBookingDate(isoString) {
+  try {
+    return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return 'N/A'; }
+}
+
 export default function GuideDashboardPage() {
+  const { getGuideBookings } = useAuth();
+  const [guideBookings, setGuideBookings] = useState([]);
+
+  useEffect(() => {
+    setGuideBookings(getGuideBookings());
+  }, [getGuideBookings]);
+
+  const pendingCount = guideBookings.filter(b => b.status === 'Pending').length;
+  const confirmedFromUsers = guideBookings.filter(b => b.status === 'Confirmed');
+
+  // Combine static tours with real confirmed bookings for the upcoming tours section
+  const allUpcoming = [
+    ...confirmedFromUsers.map(b => ({
+      id: b.id,
+      traveler: b.travelerName,
+      city: b.guideCity,
+      date: formatBookingDate(b.createdAt),
+      time: 'Flexible',
+      groupSize: 1,
+      status: b.status,
+      isReal: true,
+    })),
+    ...staticTours,
+  ];
+
+  const overviewStats = [
+    { label: 'Total Tours', value: String(64 + confirmedFromUsers.length), detail: 'All time' },
+    { label: 'Upcoming Tours', value: String(5 + confirmedFromUsers.length), detail: 'Next 14 days' },
+    { label: 'Pending Requests', value: String(3 + pendingCount), detail: 'Needs reply' },
+  ];
+
   return (
     <DashboardShell
       title="Guide Dashboard"
@@ -122,7 +157,7 @@ export default function GuideDashboardPage() {
         </div>
 
         <div className="grid gap-4">
-          {upcomingTours.map(tour => (
+          {allUpcoming.map(tour => (
             <div key={tour.id} className="rounded-2xl border border-white/10 bg-[#0f1115] p-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex-1 min-w-[220px]">
@@ -131,6 +166,11 @@ export default function GuideDashboardPage() {
                       {tour.status}
                     </span>
                     <span className="text-xs text-slate-500 font-mono">{tour.id}</span>
+                    {tour.isReal && (
+                      <span className="rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/30 px-2 py-0.5 text-[10px] font-semibold text-[#fbbf24]">
+                        New Booking
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm font-semibold text-slate-100">{tour.traveler} - {tour.city}</p>
                   <p className="text-xs text-slate-400 mt-1">{tour.date} at {tour.time}</p>

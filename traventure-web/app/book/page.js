@@ -1,22 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
 import DashboardShell from '../components/DashboardShell';
 import BorderGlow from '../components/BorderGlow';
 import { StepServices, StepSelection, StepReview, StepPayment, calcPricing } from '../components/BookingSteps';
+import { hotelsData, flightsData, guidesData } from '../data/constants';
 
 const stepLabels = ['Services', 'Selection', 'Review', 'Payment', 'Confirmed'];
 
+function formatDate(date) { return date.toISOString().split('T')[0]; }
+function addDays(ds, d) { const dt = new Date(ds); dt.setDate(dt.getDate() + d); return formatDate(dt); }
+
 export default function BookPage() {
   const { user, addBooking } = useAuth();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [services, setServices] = useState({ hotel: false, flight: false, guide: false });
   const [selections, setSelections] = useState({ hotel: null, flight: null, guide: null, flightPassengers: 1, flightClass: 'Economy' });
   const [traveler, setTraveler] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', requests: '' });
   const [payment, setPayment] = useState({ name: '', number: '', expiry: '', cvv: '' });
   const [booking, setBooking] = useState(null);
+  const prefilledRef = useRef(false);
+
+  // Auto-populate from URL query params (when arriving from individual pages)
+  useEffect(() => {
+    if (prefilledRef.current) return;
+    const service = searchParams.get('service');
+    if (!service) return;
+    prefilledRef.current = true;
+
+    const today = formatDate(new Date());
+    const tomorrow = addDays(today, 1);
+
+    if (service === 'hotel') {
+      const hotelSlug = searchParams.get('hotel');
+      const roomName = searchParams.get('room');
+      const checkIn = searchParams.get('checkIn') || today;
+      const checkOut = searchParams.get('checkOut') || tomorrow;
+      const hotel = hotelsData.find(h => h.slug === hotelSlug);
+      if (hotel) {
+        const room = hotel.rooms.find(r => r.name === roomName) || hotel.rooms[0];
+        setServices({ hotel: true, flight: false, guide: false });
+        setSelections(prev => ({
+          ...prev,
+          hotel: { ...hotel, room, checkIn, checkOut, guests: 2, roomCount: 1, rooms: hotel.rooms },
+        }));
+        setStep(1);
+      }
+    } else if (service === 'flight') {
+      const flightId = Number(searchParams.get('flight'));
+      const passengers = Number(searchParams.get('passengers')) || 1;
+      const cabin = searchParams.get('cabin') || 'Economy';
+      const tripType = searchParams.get('tripType') || 'One way';
+      const departDate = searchParams.get('departDate') || today;
+      const returnDate = searchParams.get('returnDate') || tomorrow;
+      const flight = flightsData.find(f => f.id === flightId);
+      if (flight) {
+        setServices({ hotel: false, flight: true, guide: false });
+        setSelections(prev => ({
+          ...prev,
+          flight,
+          flightPassengers: passengers,
+          flightClass: cabin,
+          flightType: tripType,
+          flightDepartDate: departDate,
+          flightReturnDate: returnDate,
+        }));
+        setStep(1);
+      }
+    } else if (service === 'guide') {
+      const guideId = searchParams.get('guide');
+      const guide = guidesData.find(g => g.id === guideId);
+      if (guide) {
+        setServices({ hotel: false, flight: false, guide: true });
+        setSelections(prev => ({ ...prev, guide }));
+        setStep(1);
+      }
+    }
+  }, [searchParams]);
 
   const anyService = services.hotel || services.flight || services.guide;
   const allSelected = (!services.hotel || selections.hotel) && (!services.flight || selections.flight) && (!services.guide || selections.guide);

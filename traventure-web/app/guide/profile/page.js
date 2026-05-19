@@ -13,15 +13,15 @@ function getInitials(name) {
 }
 
 const baseProfile = {
-  name: 'Leila B.',
-  title: 'Senior Guide',
-  bio: 'Local guide specializing in handcrafted city walks, food markets, and hidden courtyards.',
-  experienceYears: 7,
-  languages: 'English, Arabic, French',
-  email: 'leila@traventure.com',
-  phone: '+212 600 111 222',
-  city: 'Marrakesh',
-  specialties: 'Souks, tea houses, artisan lanes',
+  name: 'Rina S.',
+  title: 'Local Guide',
+  bio: 'Kyoto-based guide specializing in temple mornings, artisan lanes, and tea rituals.',
+  experienceYears: 5,
+  languages: 'English, Japanese',
+  email: 'rina@traventure.com',
+  phone: '+81 90 1234 5678',
+  city: 'Kyoto',
+  specialties: 'Temple mornings, artisan lanes, tea rituals',
 };
 
 export default function GuideProfilePage() {

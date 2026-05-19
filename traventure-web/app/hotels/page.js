@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../components/AuthContext';
 import BorderGlow from '../components/BorderGlow';
 import PageShell from '../components/PageShell';
 
@@ -64,6 +66,17 @@ const hotelsData = [
 
 export default function HotelsPage() {
   const [search, setSearch] = useState('');
+  const router = useRouter();
+  const { isLoggedIn } = useAuth();
+
+  const handleBook = (hotel) => {
+    if (isLoggedIn) {
+      const hotelParam = encodeURIComponent(hotel.slug);
+      router.push(`/book?service=hotel&hotel=${hotelParam}`);
+    } else {
+      router.push(`/login?reason=booking&next=/hotels/${hotel.slug}`);
+    }
+  };
 
   const filteredHotels = hotelsData.filter(hotel => 
     hotel.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -128,9 +141,17 @@ export default function HotelsPage() {
                 <p className="text-sm text-slate-400 mt-1">${hotel.price} / night</p>
                 <div className="mt-5 flex items-center justify-between">
                   <span className="text-sm font-semibold text-emerald-300">{hotel.rating} star</span>
-                  <Link href={`/hotels/${hotel.slug}`} className="rounded-full bg-[#2ea2d8] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">
-                    View details
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/hotels/${hotel.slug}`} className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/40">
+                      View details
+                    </Link>
+                    <button
+                      onClick={() => handleBook(hotel)}
+                      className="rounded-full bg-[#2ea2d8] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                    >
+                      {isLoggedIn ? 'Book Now' : 'Book'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </BorderGlow>
