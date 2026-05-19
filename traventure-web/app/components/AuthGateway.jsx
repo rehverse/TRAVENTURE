@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import BorderGlow from './BorderGlow';
 
 export default function AuthGateway() {
   const { login, register } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,8 +28,10 @@ export default function AuthGateway() {
     }
     if (mode === 'login') {
       login(email, password);
+      if (email.toLowerCase().includes('rina')) router.push('/guide');
     } else {
       register(name, email, password);
+      if (email.toLowerCase().includes('rina')) router.push('/guide');
     }
   };
 

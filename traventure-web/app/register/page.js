@@ -8,7 +8,7 @@ import PageShell from '../components/PageShell';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, isLoggedIn } = useAuth();
+  const { register, isLoggedIn, user } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,6 +16,11 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
 
   if (isLoggedIn) {
+    // if already logged in and a guide, send to guide workspace
+    if (user && (user.role === 'guide' || (user.email || '').toLowerCase().includes('rina'))) {
+      router.push('/guide');
+      return null;
+    }
     router.push('/dashboard');
     return null;
   }
@@ -27,7 +32,12 @@ export default function RegisterPage() {
       return;
     }
     register(name, email, password);
-    router.push('/dashboard');
+    // If email indicates a guide account, send to guide workspace
+    if (email.toLowerCase().includes('rina')) {
+      router.push('/guide');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   return (

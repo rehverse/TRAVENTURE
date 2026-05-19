@@ -9,7 +9,7 @@ import PageShell from '../components/PageShell';
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { login, isLoggedIn } = useAuth();
+  const { login, isLoggedIn, user } = useAuth();
   const reason = searchParams.get('reason');
   const nextPath = searchParams.get('next');
 
@@ -17,8 +17,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // If already logged in, redirect
+  // If already logged in, redirect (guides -> /guide)
   if (isLoggedIn) {
+    if (user && (user.role === 'guide' || (user.email || '').toLowerCase().includes('rina'))) {
+      router.push(nextPath || '/guide');
+      return null;
+    }
     router.push(nextPath || '/dashboard');
     return null;
   }
@@ -30,7 +34,12 @@ export default function LoginPage() {
       return;
     }
     login(email, password);
-    router.push(nextPath || '/dashboard');
+    // route guides to guide workspace when their email contains 'rina'
+    if (email.toLowerCase().includes('rina')) {
+      router.push(nextPath || '/guide');
+    } else {
+      router.push(nextPath || '/dashboard');
+    }
   };
 
   return (

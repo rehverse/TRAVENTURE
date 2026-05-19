@@ -51,7 +51,11 @@ export function AuthProvider({ children }) {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.email === email) {
-        setUser(parsed);
+        // If the email indicates a guide, force guide role even for legacy users
+        const isRina = (email || '').toLowerCase().includes('rina');
+        const role = isRina ? 'guide' : (parsed.role || 'user');
+        const withRole = { ...parsed, role };
+        setUser(withRole);
         return { success: true };
       }
     }
@@ -64,6 +68,7 @@ export function AuthProvider({ children }) {
       passport: '',
       nationality: '',
       initials: getInitials(name),
+      role: email.toLowerCase().includes('rina') ? 'guide' : 'user',
       createdAt: new Date().toISOString(),
     };
     setUser(newUser);
@@ -79,6 +84,7 @@ export function AuthProvider({ children }) {
       passport: '',
       nationality: '',
       initials: getInitials(name),
+      role: email.toLowerCase().includes('rina') ? 'guide' : 'user',
       createdAt: new Date().toISOString(),
     };
     setUser(newUser);
@@ -135,6 +141,9 @@ export function AuthProvider({ children }) {
     addReview,
     isLoggedIn: !!user,
   };
+
+  // convenience: isGuide
+  if (user) value.isGuide = user.role === 'guide';
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
