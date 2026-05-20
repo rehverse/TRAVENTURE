@@ -76,10 +76,20 @@ export default function SiteHeader() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-2xl border border-white/10 bg-[#0f1115] p-2 shadow-2xl">
-                  <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Dashboard</Link>
-                  <Link href="/dashboard/profile" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Profile</Link>
-                  <Link href="/dashboard/bookings" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">My Bookings</Link>
-                  <Link href="/book" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Book a Trip</Link>
+                  {user?.role === 'admin' ? (
+                    <>
+                      <Link href="/admin" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Admin Panel</Link>
+                      <Link href="/admin/bookings" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">All Bookings</Link>
+                      <Link href="/admin/users" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Manage Users</Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Dashboard</Link>
+                      <Link href="/dashboard/profile" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Profile</Link>
+                      <Link href="/dashboard/bookings" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">My Bookings</Link>
+                      <Link href="/book" onClick={() => setMenuOpen(false)} className="block rounded-xl px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">Book a Trip</Link>
+                    </>
+                  )}
                   <div className="my-1 h-px bg-white/10" />
                   <button onClick={handleLogout} className="w-full rounded-xl px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-white/10 hover:text-red-300">Sign Out</button>
                 </div>

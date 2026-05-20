@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
@@ -17,15 +17,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // If already logged in, redirect (guides -> /guide)
-  if (isLoggedIn) {
-    if (user && (user.role === 'guide' || (user.email || '').toLowerCase().includes('rina'))) {
+  // Redirect already-logged-in users via useEffect (not during render)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    if (user?.role === 'admin') {
+      router.push(nextPath || '/admin');
+    } else if (user?.role === 'guide') {
       router.push(nextPath || '/guide');
-      return null;
+    } else {
+      router.push(nextPath || '/dashboard');
     }
-    router.push(nextPath || '/dashboard');
-    return null;
-  }
+  }, [isLoggedIn, user, router, nextPath]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,13 +36,17 @@ export default function LoginPage() {
       return;
     }
     login(email, password);
-    // route guides to guide workspace when their email contains 'rina'
-    if (email.toLowerCase().includes('rina')) {
-      router.push(nextPath || '/guide');
-    } else {
-      router.push(nextPath || '/dashboard');
-    }
+    // Redirect happens via the useEffect above once user state updates
   };
+
+  // Show nothing while redirecting
+  if (isLoggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[#2ea2d8]" />
+      </div>
+    );
+  }
 
   return (
     <PageShell

@@ -1,19 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import BorderGlow from './BorderGlow';
 
 export default function AuthGateway() {
-  const { login, register } = useAuth();
+  const { login, register, user } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [pendingRedirect, setPendingRedirect] = useState(null);
+
+  // Effect to handle redirects after user state is set
+  useEffect(() => {
+    if (user && pendingRedirect) {
+      if (user.role === 'admin') {
+        router.push('/admin');
+      } else if (user.role === 'guide') {
+        router.push('/guide');
+      } else {
+        router.push('/dashboard');
+      }
+      setPendingRedirect(null);
+    }
+  }, [user, pendingRedirect, router]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -28,10 +43,10 @@ export default function AuthGateway() {
     }
     if (mode === 'login') {
       login(email, password);
-      if (email.toLowerCase().includes('rina')) router.push('/guide');
+      setPendingRedirect('login');
     } else {
       register(name, email, password);
-      if (email.toLowerCase().includes('rina')) router.push('/guide');
+      setPendingRedirect('register');
     }
   };
 

@@ -19,6 +19,13 @@ function getInitials(name) {
   return parts[0][0].toUpperCase();
 }
 
+function determineRole(email) {
+  const lower = (email || '').toLowerCase();
+  if (lower.includes('admin')) return 'admin';
+  if (lower.includes('rina')) return 'guide';
+  return 'user';
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -52,15 +59,14 @@ export function AuthProvider({ children }) {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.email === email) {
-        // If the email indicates a guide, force guide role even for legacy users
-        const isRina = (email || '').toLowerCase().includes('rina');
-        const role = isRina ? 'guide' : (parsed.role || 'user');
+        const role = determineRole(email);
         const withRole = { ...parsed, role };
         setUser(withRole);
         return { success: true };
       }
     }
     const name = email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const role = determineRole(email);
     const newUser = {
       id: generateId(),
       name,
@@ -69,7 +75,7 @@ export function AuthProvider({ children }) {
       passport: '',
       nationality: '',
       initials: getInitials(name),
-      role: email.toLowerCase().includes('rina') ? 'guide' : 'user',
+      role,
       createdAt: new Date().toISOString(),
     };
     setUser(newUser);
@@ -77,6 +83,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback((name, email, password) => {
+    const role = determineRole(email);
     const newUser = {
       id: generateId(),
       name,
@@ -85,7 +92,7 @@ export function AuthProvider({ children }) {
       passport: '',
       nationality: '',
       initials: getInitials(name),
-      role: email.toLowerCase().includes('rina') ? 'guide' : 'user',
+      role,
       createdAt: new Date().toISOString(),
     };
     setUser(newUser);
@@ -114,6 +121,55 @@ export function AuthProvider({ children }) {
       review: null,
     };
     setBookings(prev => [newBooking, ...prev]);
+
+    // ---- Sync to admin_bookings so admin can see all user bookings ----
+    try {
+      const adminBookings = JSON.parse(localStorage.getItem('admin_bookings') || '[]');
+      // Build a flat admin-friendly booking entry for each service in this booking
+      const guestName = booking.traveler?.name || user?.name || 'Traveler';
+      const bookingDate = new Date().toISOString().split('T')[0];
+
+      if (booking.hotel) {
+        adminBookings.unshift({
+          id: newBooking.id + '-H',
+          guest: guestName,
+          type: 'Hotel',
+          item: `${booking.hotel.name} - ${booking.hotel.room || 'Standard'}`,
+          checkIn: booking.hotel.checkIn || '',
+          checkOut: booking.hotel.checkOut || '',
+          bookingDate,
+          amount: booking.hotel.subtotal || 0,
+          status: 'Confirmed',
+        });
+      }
+      if (booking.flight) {
+        adminBookings.unshift({
+          id: newBooking.id + '-F',
+          guest: guestName,
+          type: 'Flight',
+          item: `${booking.flight.airline} ${booking.flight.from}-${booking.flight.to}`,
+          date: booking.flight.departDate || '',
+          passengers: booking.flight.passengers || 1,
+          bookingDate,
+          amount: booking.flight.subtotal || 0,
+          status: 'Confirmed',
+        });
+      }
+      if (booking.guide) {
+        adminBookings.unshift({
+          id: newBooking.id + '-G',
+          guest: guestName,
+          type: 'Guide',
+          item: `${booking.guide.name} - ${booking.guide.city}`,
+          date: booking.guide.departDate || '',
+          duration: '1 session',
+          bookingDate,
+          amount: booking.guide.subtotal || 0,
+          status: 'Confirmed',
+        });
+      }
+      localStorage.setItem('admin_bookings', JSON.stringify(adminBookings));
+    } catch { /* ignore */ }
 
     // If booking includes a guide, save to shared guide bookings store
     if (booking.guide) {

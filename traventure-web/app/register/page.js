@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
@@ -15,15 +15,17 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  if (isLoggedIn) {
-    // if already logged in and a guide, send to guide workspace
-    if (user && (user.role === 'guide' || (user.email || '').toLowerCase().includes('rina'))) {
+  // Redirect already-logged-in users via useEffect (not during render)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    if (user?.role === 'admin') {
+      router.push('/admin');
+    } else if (user?.role === 'guide') {
       router.push('/guide');
-      return null;
+    } else {
+      router.push('/dashboard');
     }
-    router.push('/dashboard');
-    return null;
-  }
+  }, [isLoggedIn, user, router]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,13 +34,17 @@ export default function RegisterPage() {
       return;
     }
     register(name, email, password);
-    // If email indicates a guide account, send to guide workspace
-    if (email.toLowerCase().includes('rina')) {
-      router.push('/guide');
-    } else {
-      router.push('/dashboard');
-    }
+    // Redirect happens via the useEffect above once user state updates
   };
+
+  // Show loading spinner while redirecting
+  if (isLoggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[#2ea2d8]" />
+      </div>
+    );
+  }
 
   return (
     <PageShell
